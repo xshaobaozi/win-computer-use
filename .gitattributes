@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+# 二进制资产，禁止换行符转换
+*.png binary
+*.jpg binary
+*.ico binary
+
+# Windows 侧脚本保持 CRLF 无妨，但统一由 git 归一化
+*.bat text eol=crlf
+*.ps1 text eol=crlf

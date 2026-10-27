@@ -131,6 +131,7 @@ python tools/uia_snapshot.py "记事本" --json
 | [01 远程操控架构](docs/01-remote-agent-architecture.md) | 局域网双机方案、协议设计、带宽与安全、开源方案盘点 |
 | [02 屏幕结构化](docs/02-screen-structuring-report.md) | 四视图模型、各应用实测数据、反馈闭环四种手段 |
 | [03 WPS 七条路径](docs/03-wps-control-attempts.md) | UIA / MSAA / CDP / 参数注入 / OCR / 鼠标 / 消息，逐条实测结果 |
+| [04 双机开发工作流](docs/04-dual-machine-dev.md) | Mac 写 agent、Windows 写 server，Git 同步，无需内网穿透 |
 
 ---
 

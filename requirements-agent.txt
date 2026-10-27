@@ -1,0 +1,3 @@
+# agent 端依赖 —— 全平台通用，Mac / Linux / Windows 都能装
+# Windows server 端的依赖见 requirements.txt（含 pywin32 等 win-only 包）
+websockets>=12.0
