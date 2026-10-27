@@ -37,17 +37,106 @@ bundle 是 git 官方的离线传输格式，`git bundle create --all` 打出来
 
 ---
 
-## 三、三个脚本
+## 三、脚本清单
 
 | 脚本 | 运行在哪 | 作用 |
 |---|---|---|
 | `scripts/export-bundle.ps1` | Windows | 打包成 `wcu-YYYYMMDD-HHMM.bundle` |
 | `scripts/import-bundle.sh` | Mac | 校验 + 拉取 + 安全快进 |
-| `scripts/watch-inbox.sh` | Mac | 监视 `~/wcu-inbox`，来文件就自动导入 |
+| `scripts/watch-inbox.sh` | Mac | 监视 `~/wcu-inbox`，来文件就自动导入（.bundle / .zip 都认） |
+| `scripts/import-zip.sh` | Mac | 导入 zip 快照，只提交本次导入的文件 |
+| `scripts/sync-server.py` | Mac | 可选：HTTP 服务，让 Windows 直接推/拉 |
+| `scripts/sync.ps1` | Windows | 配合上面，一条命令 `-Push` / `-Pull` |
 
 ---
 
-## 四、完整流程
+## 四、分支策略（重要）
+
+**只同步 `master`，其他分支一律拒绝。** 这条规则写死进了每一个脚本：
+
+| 位置 | 行为 |
+|---|---|
+| `export-bundle.ps1` / `sync.ps1 -Push` | 不在 master 上直接报错退出（返回码 10） |
+| 打包命令 | 用 `git bundle create x master`，**不是 `--all`** |
+| `import-bundle.sh` / `import-zip.sh` | 当前不在 master 上直接拒绝（返回码 10） |
+| `import-bundle.sh` 取 ref | 只 fetch `refs/heads/master`，其他分支根本不进来 |
+| `sync-server.py` 的 `/bundle` | Mac 不在 master 时返回 409 |
+
+为什么不用 `--all`：它会把 Windows 上的临时分支、实验分支一并带过来，
+于是出现「某个分支只在一台机器上存在」的半同步状态——你不知道该以哪台为准。
+只打 master 之后，分支层面就不可能冲突。
+
+**注意：限制分支不能消除内容冲突。** 两边都在 master 上改同一个文件的同一行，
+仍然是冲突，只是冲突发生在文件内容层面，而 `--ff-only` 会拦住它并让你手动处理。
+
+实测：一个含 `master` + `test-x` 两个分支的 `--all` bundle，
+导入后 Mac 上只产生 `winsrc/master`，`test-x` 没有进来。
+
+---
+
+## 五、可选：让 Windows 直接推/拉（HTTP 服务模式）
+
+如果不想每次「打包 → 微信传 → Mac 导入」，可以让 Mac 开一个小服务。
+
+**Mac 侧：**
+
+```bash
+python3 scripts/sync-server.py --host 0.0.0.0 --token 你的口令
+# 默认只绑 127.0.0.1，--host 0.0.0.0 才供局域网访问
+# 不填 --token 会自动生成一个并打印出来
+```
+
+**Windows 侧：**
+
+```powershell
+# 推：打包 + 上传到 Mac 的 inbox
+.\scripts\sync.ps1 -Push -Server http://10.13.230.174:8766 -Token 你的口令
+
+# 拉：从 Mac 下载最新，校验后快进
+.\scripts\sync.ps1 -Pull -Server http://10.13.230.174:8766 -Token 你的口令
+```
+
+服务端三个端点：
+
+| 端点 | 用途 |
+|---|---|
+| `GET /health?token=` | 探活，返回当前 HEAD、分支、是否有未提交改动 |
+| `GET /bundle?token=` | 现场打包 master 并下载（Windows 用来拉） |
+| `POST /upload?name=x.bundle&token=` | 上传 bundle 或 zip 到 inbox（Windows 用来推） |
+
+安全设计：
+
+- **token 必填**，无 token 一律 401
+- **只接受 `.bundle` / `.zip`**，传 `.exe` 之类直接 400 —— 不把它变成通用文件服务器
+- 默认绑 `127.0.0.1`，绑 `0.0.0.0` 时启动横幅会告警
+- 上传只是落盘到 `~/wcu-inbox`，**不直接改工作副本**；合并交给 import 脚本，
+  这样「传输」和「合并」解耦，合并失败不会污染仓库
+- 上限 200 MB
+
+用完记得 Ctrl-C。长期挂着等于在局域网里常驻一个可写入口。
+
+---
+
+## 六、zip 是怎么处理的
+
+如果 Windows 那边只给了 zip（比如直接右键压缩了整个文件夹），
+`import-zip.sh` 会这样处理：
+
+1. 解压到临时目录；如果只有一个顶层文件夹，自动剥掉这一层
+2. 如果发现里面带 `.git` 目录，**中止并提示改用 bundle**（那说明整个仓库被压缩了）
+3. 排除 `.git`，把文件覆盖到工作副本
+4. **只 `git add` 本次导入的那些文件**，然后自动提交一个
+   `sync: 导入 Windows zip 快照 (时间)` 的 commit
+
+第 4 步是关键：早期版本用了 `git add -A`，会把工作区里其他未提交的改动
+一起卷进这个提交，事后完全解释不清。现在只 add 导入清单里的路径。
+
+zip 的代价是丢历史，所以每个 zip 只能变成一个「快照提交」。
+能拿到 bundle 就别用 zip。
+
+---
+
+## 七、完整流程
 
 ### 方案 A：临时 HTTP（两台机器都在局域网时最省事）
 
@@ -106,7 +195,7 @@ Mac 上开一个窗口：
 
 ---
 
-## 五、Mac 侧改动怎么回传给 Windows
+## 八、Mac 侧改动怎么回传给 Windows
 
 反向是同一个套路，只是 Windows 上没有 import 脚本，用两条 git 命令：
 
@@ -126,7 +215,7 @@ git merge --ff-only macsync/master
 
 ---
 
-## 六、安全设计
+## 九、安全设计
 
 `import-bundle.sh` 做了三层保护，每一层都是实测过的：
 
@@ -142,7 +231,7 @@ git merge --ff-only macsync/master
 
 ---
 
-## 七、已验证 / 未验证
+## 十、已验证 / 未验证
 
 | 项 | 状态 |
 |---|---|
@@ -150,15 +239,20 @@ git merge --ff-only macsync/master
 | `import-bundle.sh` 正常快进 | ✅ 已验证（新增提交被正确快进，新增文件落盘） |
 | 本地有未提交改动时拒绝覆盖 | ✅ 已验证（返回码 4，本地改动完整保留） |
 | `watch-inbox.sh` 自动导入 | ✅ 已验证（放入 bundle 后 7 秒内完成导入，文件落盘、bundle 移入 done/） |
-| `export-bundle.ps1` 在真 Windows 上运行 | ❌ 未验证，本机是 Mac，PowerShell 参数未实跑 |
+| 非 master 分支拒绝导入 | ✅ 已验证（`test-branch` 上导入 bundle / zip 均返回码 10） |
+| 只同步 master，其他分支不进入 | ✅ 已验证（含 `test-x` 的 `--all` bundle 导入后只产生 `winsrc/master`） |
+| `sync-server.py` 三个端点 | ✅ 已验证（无 token 401、下载 180 KB 且 bundle 校验通过、上传落盘、`.exe` 被 400 拒绝） |
+| `import-zip.sh` 只提交导入文件 | ✅ 已验证（提交里仅 1 个文件，无关的未提交改动未被卷入） |
+| `export-bundle.ps1` / `sync.ps1` 在真 Windows 上运行 | ❌ 未验证，本机是 Mac，PowerShell 参数未实跑 |
 
 ---
 
-## 八、注意事项
+## 十一、注意事项
 
-1. **bundle 用 `--all` 打包**，否则只打当前分支，Windows 上新建的分支会丢。
+1. **刻意只打 `master`，不用 `--all`**。所以 Windows 上临时开的实验分支不会传过来——
+   这是设计，不是 bug。真要传，先把它合进 master。
 2. **不要用 bundle 传超大二进制**。这个仓库 169 KB 没问题，但如果以后塞进模型权重、
    截图集，bundle 会等比例膨胀（它不做 zip 那种高压缩，只是 git 打包）。那时该换 LFS 或网盘。
 3. **两边都改同一文件**时，`--ff-only` 会拒绝。这是刻意的——宁可让你手动处理，
    也不要静默覆盖。手动方案：`git pull --rebase winsrc master`。
-4. **bundle 文件本身别提交进仓库**。`.gitignore` 里加 `*.bundle`。
+4. **bundle 文件本身别提交进仓库**。`.gitignore` 里已加 `*.bundle`。
