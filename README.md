@@ -132,6 +132,7 @@ python tools/uia_snapshot.py "记事本" --json
 | [02 屏幕结构化](docs/02-screen-structuring-report.md) | 四视图模型、各应用实测数据、反馈闭环四种手段 |
 | [03 WPS 七条路径](docs/03-wps-control-attempts.md) | UIA / MSAA / CDP / 参数注入 / OCR / 鼠标 / 消息，逐条实测结果 |
 | [04 双机开发工作流](docs/04-dual-machine-dev.md) | Mac 写 agent、Windows 写 server，Git 同步，无需内网穿透 |
+| [05 局域网 Git 中枢](docs/05-lan-git-hub.md) | 公司电脑连不上 GitHub 时，把 Mac 当 git 服务直接 push |
 
 ---
 

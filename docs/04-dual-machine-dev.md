@@ -136,6 +136,9 @@ python -m agent.demo --url ws://<Win的IP>:8765/ws/control
 
 ## 六、Windows 上拉代码（公司电脑首次配置）
 
+> 如果公司网络完全连不上 GitHub，别折腾代理了，直接看
+> [05 局域网 Git 中枢](05-lan-git-hub.md) —— 把 Mac 当 git 服务，公司电脑不碰外网。
+
 Git 访问 GitHub 需要代理，且 **SSH 不认 `http.proxy`**，必须用 ProxyCommand。
 在 `C:\Users\<你>\.ssh\config` 里加（假设代理端口 12334）：
 
