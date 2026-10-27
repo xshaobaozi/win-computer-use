@@ -23,3 +23,6 @@ wps_now.png
 .DS_Store
 Thumbs.db
 *.log
+
+# 双机同步的 bundle 文件（见 docs/06）
+*.bundle
