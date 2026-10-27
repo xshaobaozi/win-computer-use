@@ -149,7 +149,7 @@ git merge --ff-only macsync/master
 | `export-bundle.ps1` 生成的 bundle 被 git 正确识别 | ✅ 已验证（169 KB，含全部历史） |
 | `import-bundle.sh` 正常快进 | ✅ 已验证（新增提交被正确快进，新增文件落盘） |
 | 本地有未提交改动时拒绝覆盖 | ✅ 已验证（返回码 4，本地改动完整保留） |
-| `watch-inbox.sh` 自动导入 | ⚠️ 逻辑简单，未做长时间挂机测试 |
+| `watch-inbox.sh` 自动导入 | ✅ 已验证（放入 bundle 后 7 秒内完成导入，文件落盘、bundle 移入 done/） |
 | `export-bundle.ps1` 在真 Windows 上运行 | ❌ 未验证，本机是 Mac，PowerShell 参数未实跑 |
 
 ---
