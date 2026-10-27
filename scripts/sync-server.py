@@ -32,7 +32,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-WORKDIR = Path("/Users/pengyijun/WorkBuddy/2026-10-27-10-25-34/win-computer-use")
+# 仓库根目录 = 本脚本所在目录的上一级，也可用环境变量 WCU_WORKDIR 覆盖。
+WORKDIR = Path(os.environ.get("WCU_WORKDIR") or Path(__file__).resolve().parent.parent)
 INBOX = Path.home() / "wcu-inbox"
 MAX_BYTES = 200 * 1024 * 1024
 ALLOWED_EXT = {".bundle", ".zip"}

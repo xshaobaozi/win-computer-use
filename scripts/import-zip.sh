@@ -7,15 +7,18 @@
 #   bundle —— 保留 git 历史，可以 fast-forward，冲突可控   ← 首选
 #   zip    —— 只是一堆文件，没有历史；只能"照单覆盖"再补一个提交
 #
-# 所以 zip 的处理方式是：解压 → 覆盖到工作副本（排除 .git）→ git add -A
-# → 自动创建一个提交。这样虽然粒度粗，但至少每次导入都有据可查、
-# 可以 git revert 回来，不会出现"文件莫名变了却不知道是谁改的"。
+# 所以 zip 的处理方式是：解压 → 覆盖到工作副本（排除 .git）
+# → 只 add 导入清单里的文件 → 自动创建一个提交。这样虽然粒度粗，
+# 但每次导入都有据可查、可以 revert 回来，不会出现"文件莫名变了却不知道是谁改的"。
+# 注意只 add 导入的文件，不能用 git add -A（会把无关的未提交改动卷进来）。
 #
 # 如果 zip 里带 .git 目录，说明对方直接压了整个仓库——会提示改用 bundle。
 
 set -uo pipefail
 
-WORKDIR="/Users/pengyijun/WorkBuddy/2026-10-27-10-25-34/win-computer-use"
+# 仓库根目录 = 本脚本所在目录的上一级。不再硬编码绝对路径。
+HERE="$(cd "$(dirname "$0")" && pwd)"
+WORKDIR="${WCU_WORKDIR:-$(cd "$HERE/.." && pwd)}"
 SYNC_BRANCH="master"
 
 if [ $# -lt 1 ]; then

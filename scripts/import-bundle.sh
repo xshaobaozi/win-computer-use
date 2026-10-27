@@ -12,7 +12,10 @@
 
 set -uo pipefail
 
-WORKDIR="/Users/pengyijun/WorkBuddy/2026-10-27-10-25-34/win-computer-use"
+# 仓库根目录 = 本脚本所在目录的上一级。不再硬编码绝对路径，
+# 换机器 / 换目录都不用改代码。需要覆盖时设环境变量 WCU_WORKDIR。
+HERE="$(cd "$(dirname "$0")" && pwd)"
+WORKDIR="${WCU_WORKDIR:-$(cd "$HERE/.." && pwd)}"
 REMOTE_NAME="winsrc"
 
 # 分支策略：只同步这一个分支。bundle 只取这一个 ref，其他分支一律不导入，
