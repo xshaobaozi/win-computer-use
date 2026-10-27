@@ -14,6 +14,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# 分支策略：只同步这一个分支。
+# 故意不用 --all —— 临时/实验分支不该跟着传过去，否则会出现
+# "某个分支只在这一台机器上存在"的半同步状态。
+$SyncBranch = "master"
+
 $ts = Get-Date -Format "yyyyMMdd-HHmm"
 $name = "wcu-$ts.bundle"
 
@@ -23,9 +28,24 @@ if (-not (Test-Path (Join-Path $repoFull ".git"))) {
     exit 1
 }
 
+$current = git -C $repoFull symbolic-ref --short HEAD
+if ($current -ne $SyncBranch) {
+    Write-Host "✗ 当前分支是 '$current'，同步只允许在 $SyncBranch 上操作。"
+    Write-Host "  先切回: git checkout $SyncBranch"
+    Write-Host "  或者把改动合到 $SyncBranch 再打包。"
+    exit 10
+}
+
+$dirty = git -C $repoFull status --porcelain
+if ($dirty) {
+    Write-Host "⚠ 有未提交改动，这些改动不会进 bundle："
+    $dirty | ForEach-Object { Write-Host "    $_" }
+    Write-Host ""
+}
+
 $outFull = [System.IO.Path]::GetFullPath((Join-Path (Resolve-Path $OutDir).Path $name))
 
-git -C $repoFull bundle create $outFull --all
+git -C $repoFull bundle create $outFull $SyncBranch
 if ($LASTEXITCODE -ne 0) {
     Write-Error "打包失败"
     exit 1
