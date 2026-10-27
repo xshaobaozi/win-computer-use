@@ -139,3 +139,9 @@ python tools/uia_snapshot.py "记事本" --json
 - Windows 10 / 11
 - Python 3.10+（实测 3.13）
 - 依赖见 `requirements.txt`；OCR 用 `rapidocr-onnxruntime`，离线、无需额外二进制
+
+---
+
+## 验证记录
+
+- 2026-10-27：代理推送链路验证（临时提交，下一步撤回）。
