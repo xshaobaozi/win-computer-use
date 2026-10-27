@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 运行产物（脚本生成，不入库）
+windows.json
+probe_result.json
+cef_probe.json
+annotated.png
+after_click.png
+full_screen.png
+login_crop.png
+login_now.png
+wps_now.png
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
