@@ -35,19 +35,49 @@ git bundle create /tmp/win-bootstrap.bundle HEAD master
 对方 `git clone` 会去找不存在的 `main` 分支，结果是**检出空目录**并报
 `warning: remote HEAD refers to nonexistent ref`。
 
-把 `win-bootstrap.bundle` 用微信发到公司电脑，然后：
+把 `win-bootstrap.bundle` 用微信发到公司电脑，然后在**目标目录里**执行下面这套。
+它比 `git clone` 更稳，因为：不要求目录是空的，也不要求 bundle 里带 HEAD。
 
-```powershell
-git clone C:\Users\Kingsoft\Downloads\win-bootstrap.bundle win-computer-use
-cd win-computer-use
-git log --oneline -1          # 应该看到和 Mac 一样的提交
+```bash
+cd /c/c-kingsoft
+
+# 0. 先确认目录里那个意外的 .git 没有提交（有提交就别删，先备份）
+git log --oneline 2>&1 | head -3
+ls -A
+
+# 1. 删掉意外的空仓库，重新初始化到 master
+rm -rf .git
+git init -b master
+
+# 2. 从 bundle 取回全部历史和工作区
+git fetch ~/Downloads/win-bootstrap.bundle master
+git reset --hard FETCH_HEAD
+
+# 3. 确认
+git log --oneline -1        # 应显示和 Mac 一样的提交
+ls
 ```
 
-**如果克隆出来是空目录**（说明拿到的是老的、没带 HEAD 的 bundle），补救一条命令：
+`git init -b master` 需要 git ≥ 2.28。老版本用：
 
-```powershell
-git checkout master
+```bash
+git init
+git symbolic-ref HEAD refs/heads/master
 ```
+
+如果目录里还有别的杂物，`git reset --hard` **不会删它们**，只会显示成未跟踪文件
+（`git status` 里是 `??`），可以事后手动清理。
+
+#### 如果你就是想用 clone
+
+如果 `C:\c-kingsoft` 确实是空的，那也可以直接克隆：
+
+```bash
+git clone ~/Downloads/win-bootstrap.bundle /c/c-kingsoft
+```
+
+但要注意：**目录非空会失败**，而且用不带 HEAD 的旧 bundle 克隆会得到空目录，
+此时补一条 `git checkout master`。
 
 ---
 
