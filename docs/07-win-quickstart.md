@@ -28,19 +28,44 @@ Mac 上先生成一个全量 bundle：
 
 ```bash
 cd /Users/pengyijun/kingsoft/win-computer-use
-git bundle create /tmp/win-bootstrap.bundle master
+git bundle create /tmp/win-bootstrap.bundle HEAD master
 ```
+
+⚠️ **注意 `HEAD` 不能省**。只写 `master` 的话 bundle 里没有 HEAD 引用，
+对方 `git clone` 会去找不存在的 `main` 分支，结果是**检出空目录**并报
+`warning: remote HEAD refers to nonexistent ref`。
 
 把 `win-bootstrap.bundle` 用微信发到公司电脑，然后：
 
 ```powershell
-# 直接把 bundle 当仓库克隆（bundle 支持被 clone）
 git clone C:\Users\Kingsoft\Downloads\win-bootstrap.bundle win-computer-use
 cd win-computer-use
 git log --oneline -1          # 应该看到和 Mac 一样的提交
 ```
 
-这样拿到的仓库历史完整，之后就能正常 commit。
+**如果克隆出来是空目录**（说明拿到的是老的、没带 HEAD 的 bundle），补救一条命令：
+
+```powershell
+git checkout master
+```
+
+---
+
+## 一之二、克隆完成后 origin 指向的是那个 bundle 文件
+
+```powershell
+git remote -v
+# origin  C:\Users\Kingsoft\Downloads\win-bootstrap.bundle (fetch)
+# origin  C:\Users\Kingsoft\Downloads\win-bootstrap.bundle (push)
+```
+
+这是正常的——origin 指向本地文件，**不能 push**。后续同步用第三节的
+「打包 → 传 → 导入」流程，或者等 SSH 打通了再挂一个真正的远端：
+
+```powershell
+git remote add mac ssh://pengyijun@10.13.230.174/Users/pengyijun/repos/win-computer-use.git
+git push mac master
+```
 
 ---
 

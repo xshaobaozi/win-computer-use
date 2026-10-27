@@ -45,7 +45,10 @@ if ($dirty) {
 
 $outFull = [System.IO.Path]::GetFullPath((Join-Path (Resolve-Path $OutDir).Path $name))
 
-git -C $repoFull bundle create $outFull $SyncBranch
+# 必须带 HEAD：只打 master 的话 bundle 里没有 HEAD 引用，
+# 对方 git clone 时会默认去找 main 分支，结果检出空目录 + 报
+# "remote HEAD refers to nonexistent ref"。
+git -C $repoFull bundle create $outFull HEAD $SyncBranch
 if ($LASTEXITCODE -ne 0) {
     Write-Error "打包失败"
     exit 1

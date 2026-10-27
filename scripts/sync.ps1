@@ -58,7 +58,8 @@ if ($Push) {
 
     $bundle = Join-Path $env:TEMP "wcu-win-$ts.bundle"
     Write-Host "== 打包 =="
-    git -C $repoFull bundle create $bundle $SyncBranch
+    # 带 HEAD，否则对方 clone 这个 bundle 会检出空目录
+    git -C $repoFull bundle create $bundle HEAD $SyncBranch
     if ($LASTEXITCODE -ne 0) { Write-Error "打包失败"; exit 1 }
 
     $size = [math]::Round((Get-Item $bundle).Length / 1KB, 1)

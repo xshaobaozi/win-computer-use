@@ -118,7 +118,8 @@ class Handler(BaseHTTPRequestHandler):
         fd, tmp = tempfile.mkstemp(suffix=".bundle")
         os.close(fd)
         try:
-            r = git("bundle", "create", tmp, SYNC_BRANCH)
+            # 带 HEAD：只打分支的话对方 clone 会检出空目录
+            r = git("bundle", "create", tmp, "HEAD", SYNC_BRANCH)
             if r.returncode != 0:
                 return self._json(500, {"ok": False, "error": f"打包失败: {r.stderr.strip()[:300]}"})
 
